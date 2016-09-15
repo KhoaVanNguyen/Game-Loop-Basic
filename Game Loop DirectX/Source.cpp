@@ -171,7 +171,7 @@ void Game_Run(HWND hwnd)
 			posRight = width;
 		}
 		DrawCustomRect(posRight, bottom);
-		ClearRect(preLeft, preRight, preTop, preBottom);
+		//ClearRect(preLeft, preRight, preTop, preBottom);
 		//stop rendering
 		d3ddev->EndScene();
 
