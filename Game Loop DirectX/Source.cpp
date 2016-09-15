@@ -1,6 +1,3 @@
-// Beginning Game Programming
-// Chapter 3 - Direct3D_Windowed program
-
 #include <windows.h>
 #include <d3d9.h>
 #include <time.h>
@@ -14,12 +11,65 @@ const string APPTITLE = "Direct3D_Windowed";
 const int SCREENW = 640;
 const int SCREENH = 480;
 
+extern int width = 20;
+extern int height = 20;
+extern int posRight = 20;
+extern int bottom = 20;
+bool isBegin = false;
+void Game_End(HWND hwnd);
+
+// previous rect
+extern int preRight = 20;
+extern int preLeft = 20;
+extern int preTop = 20;
+extern int preBottom = 20;
 //Direct3D objects
 LPDIRECT3D9 d3d = NULL;
 LPDIRECT3DDEVICE9 d3ddev = NULL;
-
+LPDIRECT3DSURFACE9 backbuffer = NULL;
+LPDIRECT3DSURFACE9 surface = NULL;
 bool gameover = false;
-
+void DrawCustomRect(int right, int bottom) {
+	RECT rect;
+	int r, g, b;
+	r = rand() % 255;
+	g = rand() % 255;
+	b = rand() % 255;
+	d3ddev->ColorFill(surface, NULL, D3DCOLOR_XRGB(r, g, b));
+	//d3ddev->ColorFill(surface, NULL, D3DCOLOR_XRGB(0, 255, 255));
+	rect.left = right - width;
+	rect.right = right;
+	rect.top = bottom - height;
+	rect.bottom = bottom;
+	// save for the previous position
+	preLeft = rect.left;
+	preRight = rect.right;
+	preTop = rect.top;
+	preBottom = rect.bottom;
+	d3ddev->StretchRect(surface, NULL, backbuffer, &rect, D3DTEXF_NONE);
+}
+void ClearRect(int left, int right, int top, int bottom) {
+	RECT rect;
+	d3ddev->ColorFill(surface, NULL, D3DCOLOR_XRGB(255, 255, 255));
+	//d3ddev->ColorFill(surface, NULL, D3DCOLOR_XRGB(0, 255, 255));
+	rect.left = left;
+	rect.right = right;
+	rect.top = top;
+	rect.bottom = bottom;
+	d3ddev->StretchRect(surface, NULL, backbuffer, &rect, D3DTEXF_NONE);
+}
+// Windows event handling function
+LRESULT WINAPI WinProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	switch (msg)
+	{
+	case WM_DESTROY:
+		Game_End(hWnd);
+		PostQuitMessage(0);
+		return 0;
+	}
+	return DefWindowProc(hWnd, msg, wParam, lParam);
+}
 //macro to detect key presses
 #define KEY_DOWN(vk_code) ((GetAsyncKeyState(vk_code) & 0x8000) ? 1 : 0)
 
@@ -27,6 +77,7 @@ bool gameover = false;
 // Game initialization function
 bool Game_Init(HWND hwnd)
 {
+	HRESULT result;
 	//initialize Direct3D
 	d3d = Direct3DCreate9(D3D_SDK_VERSION);
 	if (d3d == NULL)
@@ -34,10 +85,9 @@ bool Game_Init(HWND hwnd)
 		MessageBox(hwnd, "Error initializing Direct3D", "Error", MB_OK);
 		return FALSE;
 	}
-
 	//set Direct3D presentation parameters
 	D3DPRESENT_PARAMETERS d3dpp;
-	ZeroMemory(&d3dpp, sizeof(d3dpp));
+	ZeroMemory(&d3dpp, sizeof(d3dpp)); // just clear it
 	d3dpp.Windowed = TRUE;
 	d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
 	d3dpp.BackBufferFormat = D3DFMT_X8R8G8B8;
@@ -45,23 +95,38 @@ bool Game_Init(HWND hwnd)
 	d3dpp.BackBufferWidth = SCREENW;
 	d3dpp.BackBufferHeight = SCREENH;
 	d3dpp.hDeviceWindow = hwnd;
-
 	//create Direct3D device
 	d3d->CreateDevice(
 		D3DADAPTER_DEFAULT,
 		D3DDEVTYPE_HAL,
-		hwnd,
-		D3DCREATE_SOFTWARE_VERTEXPROCESSING,
+		hwnd, // which window
+		D3DCREATE_SOFTWARE_VERTEXPROCESSING, // type of fuctinon in video card
 		&d3dpp,
-		&d3ddev);
+		&d3ddev); // point to pointer
 
 	if (d3ddev == NULL)
 	{
 		MessageBox(hwnd, "Error creating Direct3D device", "Error", MB_OK);
 		return FALSE;
 	}
+	// set random speed
+	srand(time(NULL));
+	// Clear the backbuffer
+	d3ddev->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0);
+	d3ddev->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &backbuffer);
 
-	return TRUE;
+	// create surface
+	result = d3ddev->CreateOffscreenPlainSurface(
+		100,
+		100,
+		D3DFMT_X8R8G8B8,
+		D3DPOOL_DEFAULT,
+		&surface,
+		NULL);
+	if (!result) {
+		return 1;
+	}
+	return 1;
 }
 
 // Game update function
@@ -71,20 +136,49 @@ void Game_Run(HWND hwnd)
 	if (!d3ddev) return;
 
 	//clear the backbuffer to bright green
-	d3ddev->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0, 0, 255), 1.0f, 0);
-
+	//d3ddev->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0, 255, 255), 1.0f, 0);
+	
 	//start rendering
 	if (d3ddev->BeginScene())
 	{
-		//do something?
-
+		// configure rect's position
+		if (posRight - width < SCREENW && bottom == height) {
+			posRight += width;
+			bottom = height;
+			// draw at corner
+			if (posRight == SCREENW) {
+				DrawCustomRect(posRight, bottom);
+			}
+		}
+		if (posRight == SCREENW && bottom <= SCREENH) {
+			bottom += height;
+			posRight = SCREENW;
+			// draw at corner
+			if (bottom == SCREENH) {
+				DrawCustomRect(posRight, bottom);
+			}
+		}
+		if (posRight - width >= 0 && bottom == SCREENH) {
+			posRight -= width;
+			bottom == SCREENH;
+			// draw at corner
+			if (posRight == width) {
+				DrawCustomRect(posRight, bottom);
+			}
+		}
+		if (posRight - width == 0 && bottom - height > 0) {
+			bottom -= height;
+			posRight = width;
+		}
+		DrawCustomRect(posRight, bottom);
+		ClearRect(preLeft, preRight, preTop, preBottom);
 		//stop rendering
 		d3ddev->EndScene();
 
 		//copy back buffer to the frame buffer
-		d3ddev->Present(NULL, NULL, NULL, NULL);
+		
 	}
-
+	d3ddev->Present(NULL, NULL, NULL, NULL);
 	//check for escape key (to exit program)
 	if (KEY_DOWN(VK_ESCAPE))
 		PostMessage(hwnd, WM_DESTROY, 0, 0);
@@ -92,8 +186,8 @@ void Game_Run(HWND hwnd)
 }
 
 // Game shutdown function
-void Game_End(HWND hwnd)
-{
+void Game_End(HWND hwnd){
+	surface->Release();
 	if (d3ddev)
 	{
 		d3ddev->Release();
@@ -107,17 +201,7 @@ void Game_End(HWND hwnd)
 }
 
 
-// Windows event handling function
-LRESULT WINAPI WinProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	switch (msg)
-	{
-	case WM_DESTROY:
-		gameover = true;
-		break;
-	}
-	return DefWindowProc(hWnd, msg, wParam, lParam);
-}
+
 
 // Main Windows entry function
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
@@ -170,6 +254,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		}
 
 		Game_Run(hwnd);
+		
+		
+		
 	}
 
 	Game_End(hwnd);
