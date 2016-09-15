@@ -258,7 +258,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		
 		
 	}
-
+	// just test git fork
 	Game_End(hwnd);
 
 	return msg.wParam;
