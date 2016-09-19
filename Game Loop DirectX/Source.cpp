@@ -6,8 +6,10 @@ using namespace std;
 
 #pragma comment(lib,"d3d9.lib")
 
+#define FRAME_RATE 60
+
 //program settings
-const string APPTITLE = "Game Loop Basics";
+const string APPTITLE = "Direct3D_Windowed";
 const int SCREENW = 640;
 const int SCREENH = 480;
 
@@ -29,6 +31,7 @@ LPDIRECT3DDEVICE9 d3ddev = NULL;
 LPDIRECT3DSURFACE9 backbuffer = NULL;
 LPDIRECT3DSURFACE9 surface = NULL;
 bool gameover = false;
+bool isDeleted = true;
 void DrawCustomRect(int right, int bottom) {
 	RECT rect;
 	int r, g, b;
@@ -50,8 +53,8 @@ void DrawCustomRect(int right, int bottom) {
 }
 void ClearRect(int left, int right, int top, int bottom) {
 	RECT rect;
-	d3ddev->ColorFill(surface, NULL, D3DCOLOR_XRGB(255, 255, 255));
-	//d3ddev->ColorFill(surface, NULL, D3DCOLOR_XRGB(0, 255, 255));
+	d3ddev->ColorFill(surface, NULL, D3DCOLOR_XRGB(0, 0, 0)); // same with bg color
+															  //d3ddev->ColorFill(surface, NULL, D3DCOLOR_XRGB(0, 255, 255));
 	rect.left = left;
 	rect.right = right;
 	rect.top = top;
@@ -63,6 +66,7 @@ LRESULT WINAPI WinProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch (msg)
 	{
+
 	case WM_DESTROY:
 		Game_End(hWnd);
 		PostQuitMessage(0);
@@ -103,7 +107,6 @@ bool Game_Init(HWND hwnd)
 		D3DCREATE_SOFTWARE_VERTEXPROCESSING, // type of fuctinon in video card
 		&d3dpp,
 		&d3ddev); // point to pointer
-
 	if (d3ddev == NULL)
 	{
 		MessageBox(hwnd, "Error creating Direct3D device", "Error", MB_OK);
@@ -128,15 +131,16 @@ bool Game_Init(HWND hwnd)
 	}
 	return 1;
 }
+
 // Game update function
-void Game_Run(HWND hwnd)
+void Game_Run(HWND hwnd, int preLeft, int preRight, int preTop, int preBottom)
 {
 	//make sure the Direct3D device is valid
 	if (!d3ddev) return;
 
 	//clear the backbuffer to bright green
 	//d3ddev->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0, 255, 255), 1.0f, 0);
-	
+
 	//start rendering
 	if (d3ddev->BeginScene())
 	{
@@ -169,13 +173,21 @@ void Game_Run(HWND hwnd)
 			bottom -= height;
 			posRight = width;
 		}
-		DrawCustomRect(posRight, bottom);
-		//ClearRect(preLeft, preRight, preTop, preBottom);
+		if (isDeleted)
+		{
+			DrawCustomRect(posRight, bottom);
+			isDeleted = false;
+		}
+		else {
+			ClearRect(preLeft, preRight, preTop, preBottom);
+			isDeleted = true;
+		}
+
 		//stop rendering
 		d3ddev->EndScene();
 
 		//copy back buffer to the frame buffer
-		
+
 	}
 	d3ddev->Present(NULL, NULL, NULL, NULL);
 	//check for escape key (to exit program)
@@ -185,7 +197,7 @@ void Game_Run(HWND hwnd)
 }
 
 // Game shutdown function
-void Game_End(HWND hwnd){
+void Game_End(HWND hwnd) {
 	surface->Release();
 	if (d3ddev)
 	{
@@ -198,9 +210,6 @@ void Game_End(HWND hwnd){
 		d3d = NULL;
 	}
 }
-
-
-
 
 // Main Windows entry function
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
@@ -243,6 +252,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	//initialize the game
 	if (!Game_Init(hwnd)) return FALSE;
 
+	DWORD frame_start = GetTickCount();
+	DWORD count_per_frame = 1000 / FRAME_RATE;
+
 	// main message loop
 	while (!gameover)
 	{
@@ -251,9 +263,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
+		DWORD now = GetTickCount();
+		if (now - frame_start >= count_per_frame)
+		{
+			frame_start = now;
+			Game_Run(hwnd, preLeft, preRight, preTop, preBottom);
 
-		Game_Run(hwnd);
+		}
 	}
+	// just test git fork
 	Game_End(hwnd);
 
 	return msg.wParam;
