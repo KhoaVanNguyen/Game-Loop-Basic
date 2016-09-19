@@ -7,7 +7,7 @@ using namespace std;
 #pragma comment(lib,"d3d9.lib")
 
 //program settings
-const string APPTITLE = "Direct3D_Windowed";
+const string APPTITLE = "Game Loop Basics";
 const int SCREENW = 640;
 const int SCREENH = 480;
 
@@ -128,7 +128,6 @@ bool Game_Init(HWND hwnd)
 	}
 	return 1;
 }
-
 // Game update function
 void Game_Run(HWND hwnd)
 {
@@ -254,11 +253,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		}
 
 		Game_Run(hwnd);
-		
-		
-		
 	}
-
 	Game_End(hwnd);
 
 	return msg.wParam;
