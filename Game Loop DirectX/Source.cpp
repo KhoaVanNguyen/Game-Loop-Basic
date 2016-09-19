@@ -251,6 +251,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	//initialize the game
 	if (!Game_Init(hwnd)) return FALSE;
+	
+	DWORD frame_start =  GetTickCount();
+	DWORD count_per_frame = 1000 / FRAME_RATE;
 
 	DWORD frame_start = GetTickCount();
 	DWORD count_per_frame = 1000 / FRAME_RATE;
@@ -264,11 +267,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			DispatchMessage(&msg);
 		}
 		DWORD now = GetTickCount();
+<<<<<<< HEAD
 		if (now - frame_start >= count_per_frame)
 		{
 			frame_start = now;
 			Game_Run(hwnd, preLeft, preRight, preTop, preBottom);
 
+=======
+		if (now - frame_start>=count_per_frame)
+		{
+			frame_start = now;
+			Game_Run(hwnd);
+>>>>>>> 0d16aef74525ab09a135cfbac55db484b097408e
 		}
 	}
 	// just test git fork
