@@ -6,6 +6,8 @@ using namespace std;
 
 #pragma comment(lib,"d3d9.lib")
 
+#define FRAME_RATE 60
+
 //program settings
 const string APPTITLE = "Direct3D_Windowed";
 const int SCREENW = 640;
@@ -243,6 +245,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	//initialize the game
 	if (!Game_Init(hwnd)) return FALSE;
+	
+	DWORD frame_start =  GetTickCount();
+	DWORD count_per_frame = 1000 / FRAME_RATE;
 
 	// main message loop
 	while (!gameover)
@@ -252,11 +257,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
-
-		Game_Run(hwnd);
-		
-		
-		
+		DWORD now = GetTickCount();
+		if (now - frame_start>=count_per_frame)
+		{
+			frame_start = now;
+			Game_Run(hwnd);
+		}
 	}
 	// just test git fork
 	Game_End(hwnd);
